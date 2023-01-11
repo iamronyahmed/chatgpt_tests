@@ -1,0 +1,42 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import pandas as pd
+
+# Set up the webdriver
+driver = webdriver.Chrome()
+
+# Navigate to the Google Maps website
+driver.get('https://www.google.com/maps')
+
+# Find the search bar and input a search query
+search_bar = driver.find_element_by_name('q')
+search_bar.send_keys('coffee shops in Los Angeles')
+search_bar.submit()
+
+# Wait for the search results to load
+wait = WebDriverWait(driver, 10)
+wait.until(EC.presence_of_element_located((By.XPATH, '//h3[contains(@class, "section-result-title")]')))
+
+# Extract the details of each business
+businesses = []
+for result in driver.find_elements_by_xpath('//div[contains(@class, "section-result")]'):
+    business = {}
+    business['name'] = result.find_element_by_xpath('.//h3[contains(@class, "section-result-title")]').text
+    business['address'] = result.find_element_by_xpath('.//span[contains(@class, "section-result-location")]').text
+    try:
+        business['phone'] = result.find_element_by_xpath('.//span[contains(@class, "section-result-info-text")]').text
+    except:
+        business['phone'] = None
+    try:
+        business['email'] = result.find_element_by_xpath('.//a[contains(@class, "section-result-action-button")]').get_attribute('href').split(':')[1]
+    except:
+        business['email'] = None
+    businesses.append(business)
+
+# Convert the data to a pandas dataframe
+df = pd.DataFrame(businesses)
+
+# Close the webdriver
+driver.quit()
